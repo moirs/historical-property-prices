@@ -1,0 +1,52 @@
+# Visual Studio
+.vs/
+.vscode/
+*.sln.user
+*.suo
+*.vcxproj.user
+
+# .NET
+bin/
+obj/
+*.csproj.user
+*.DotSettings.user
+.vs/
+
+# NuGet
+*.nupkg
+.nuget/
+
+# Rider
+.idea/
+*.sln.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Local development
+*.local.json
+
+# Build artifacts
+*.dll
+*.exe
+*.pdb
+*.mdb
+
+# Package directories
+packages/
+.packages/
+
+# Test Results
+TestResults/
+*.trx
+
+# ReSharper
+*.DotSettings.user
+_ReSharper*/
+*.resharper.user
+*.resharper
