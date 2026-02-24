@@ -1,0 +1,6 @@
+@PropertyPrices.Api_HostAddress = http://localhost:5183
+
+GET {{PropertyPrices.Api_HostAddress}}/health/
+Accept: application/json
+
+###
