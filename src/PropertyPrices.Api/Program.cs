@@ -6,13 +6,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog((context, services, loggerConfig) =>
 {
     var logLevel = context.Configuration.GetValue<string>("Logging:LogLevel:Default") ?? "Information";
-    
+
     loggerConfig
         .MinimumLevel.Information()
         .Enrich.FromLogContext()
         .Enrich.WithProperty("Application", "PropertyPrices.Api")
         .WriteTo.Console(outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}");
-    
+
     if (builder.Environment.IsDevelopment())
     {
         loggerConfig.MinimumLevel.Debug();
