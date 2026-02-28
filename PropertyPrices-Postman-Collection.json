@@ -1,0 +1,363 @@
+{
+  "info": {
+    "name": "PropertyPrices API - HM Land Registry Integration",
+    "description": "Postman collection for testing the UK Historical Property Prices API with real HM Land Registry SPARQL endpoint",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://localhost:7123/health",
+          "protocol": "https",
+          "host": ["localhost"],
+          "port": "7123",
+          "path": ["health"]
+        },
+        "description": "Check if API is running and healthy"
+      },
+      "response": []
+    },
+    {
+      "name": "Search - Minimal (No Filters)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pageNumber\": 1,\n  \"pageSize\": 10\n}"
+        },
+        "url": {
+          "raw": "https://localhost:7123/properties/search",
+          "protocol": "https",
+          "host": ["localhost"],
+          "port": "7123",
+          "path": ["properties", "search"]
+        },
+        "description": "Search without filters - returns latest properties"
+      },
+      "response": []
+    },
+    {
+      "name": "Search - By Postcode (SW1A 1AA)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"postcode\": \"SW1A 1AA\",\n  \"pageNumber\": 1,\n  \"pageSize\": 10\n}"
+        },
+        "url": {
+          "raw": "https://localhost:7123/properties/search",
+          "protocol": "https",
+          "host": ["localhost"],
+          "port": "7123",
+          "path": ["properties", "search"]
+        },
+        "description": "Search by postcode - Parliament area (most useful test)"
+      },
+      "response": []
+    },
+    {
+      "name": "Search - By Postcode (M1 1AA)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"postcode\": \"M1 1AA\",\n  \"pageNumber\": 1,\n  \"pageSize\": 10\n}"
+        },
+        "url": {
+          "raw": "https://localhost:7123/properties/search",
+          "protocol": "https",
+          "host": ["localhost"],
+          "port": "7123",
+          "path": ["properties", "search"]
+        },
+        "description": "Search Manchester postcode"
+      },
+      "response": []
+    },
+    {
+      "name": "Search - By Postcode (B33 8TH)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"postcode\": \"B33 8TH\",\n  \"pageNumber\": 1,\n  \"pageSize\": 10\n}"
+        },
+        "url": {
+          "raw": "https://localhost:7123/properties/search",
+          "protocol": "https",
+          "host": ["localhost"],
+          "port": "7123",
+          "path": ["properties", "search"]
+        },
+        "description": "Search Birmingham postcode"
+      },
+      "response": []
+    },
+    {
+      "name": "Search - Date Range (2023)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dateFrom\": \"2023-01-01\",\n  \"dateTo\": \"2023-12-31\",\n  \"pageNumber\": 1,\n  \"pageSize\": 10\n}"
+        },
+        "url": {
+          "raw": "https://localhost:7123/properties/search",
+          "protocol": "https",
+          "host": ["localhost"],
+          "port": "7123",
+          "path": ["properties", "search"]
+        },
+        "description": "Search properties sold in 2023"
+      },
+      "response": []
+    },
+    {
+      "name": "Search - Date Range (2023 Q2)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dateFrom\": \"2023-04-01\",\n  \"dateTo\": \"2023-06-30\",\n  \"pageNumber\": 1,\n  \"pageSize\": 10\n}"
+        },
+        "url": {
+          "raw": "https://localhost:7123/properties/search",
+          "protocol": "https",
+          "host": ["localhost"],
+          "port": "7123",
+          "path": ["properties", "search"]
+        },
+        "description": "Search Q2 2023 property transactions"
+      },
+      "response": []
+    },
+    {
+      "name": "Search - Price Range",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"priceMin\": 100000,\n  \"priceMax\": 500000,\n  \"pageNumber\": 1,\n  \"pageSize\": 10\n}"
+        },
+        "url": {
+          "raw": "https://localhost:7123/properties/search",
+          "protocol": "https",
+          "host": ["localhost"],
+          "port": "7123",
+          "path": ["properties", "search"]
+        },
+        "description": "Search properties between £100k and £500k"
+      },
+      "response": []
+    },
+    {
+      "name": "Search - Property Type (Detached)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"propertyType\": \"Detached\",\n  \"pageNumber\": 1,\n  \"pageSize\": 10\n}"
+        },
+        "url": {
+          "raw": "https://localhost:7123/properties/search",
+          "protocol": "https",
+          "host": ["localhost"],
+          "port": "7123",
+          "path": ["properties", "search"]
+        },
+        "description": "Search only detached house properties (types: Detached, SemiDetached, Terraced, Flat, Other)"
+      },
+      "response": []
+    },
+    {
+      "name": "Search - Complex (All Filters)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"postcode\": \"M1 1AA\",\n  \"dateFrom\": \"2023-06-01\",\n  \"dateTo\": \"2023-12-31\",\n  \"priceMin\": 150000,\n  \"priceMax\": 750000,\n  \"propertyType\": \"Detached\",\n  \"pageNumber\": 1,\n  \"pageSize\": 20\n}"
+        },
+        "url": {
+          "raw": "https://localhost:7123/properties/search",
+          "protocol": "https",
+          "host": ["localhost"],
+          "port": "7123",
+          "path": ["properties", "search"]
+        },
+        "description": "Complex search with multiple filters combined"
+      },
+      "response": []
+    },
+    {
+      "name": "Search - Pagination (Page 2)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"postcode\": \"SW1A 1AA\",\n  \"pageNumber\": 2,\n  \"pageSize\": 25\n}"
+        },
+        "url": {
+          "raw": "https://localhost:7123/properties/search",
+          "protocol": "https",
+          "host": ["localhost"],
+          "port": "7123",
+          "path": ["properties", "search"]
+        },
+        "description": "Get page 2 of results (25 items per page)"
+      },
+      "response": []
+    },
+    {
+      "name": "Search - Large Page Size",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dateFrom\": \"2023-01-01\",\n  \"dateTo\": \"2023-01-31\",\n  \"pageNumber\": 1,\n  \"pageSize\": 100\n}"
+        },
+        "url": {
+          "raw": "https://localhost:7123/properties/search",
+          "protocol": "https",
+          "host": ["localhost"],
+          "port": "7123",
+          "path": ["properties", "search"]
+        },
+        "description": "Get 100 items per page (maximum is 1000)"
+      },
+      "response": []
+    },
+    {
+      "name": "Search - Error Test (Invalid Postcode)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"postcode\": \"TOOLONG\",\n  \"pageNumber\": 1,\n  \"pageSize\": 10\n}"
+        },
+        "url": {
+          "raw": "https://localhost:7123/properties/search",
+          "protocol": "https",
+          "host": ["localhost"],
+          "port": "7123",
+          "path": ["properties", "search"]
+        },
+        "description": "Test error handling - postcode too long (will return 400 Bad Request)"
+      },
+      "response": []
+    },
+    {
+      "name": "Search - Error Test (Invalid Date Range)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dateFrom\": \"2023-12-31\",\n  \"dateTo\": \"2023-01-01\",\n  \"pageNumber\": 1,\n  \"pageSize\": 10\n}"
+        },
+        "url": {
+          "raw": "https://localhost:7123/properties/search",
+          "protocol": "https",
+          "host": ["localhost"],
+          "port": "7123",
+          "path": ["properties", "search"]
+        },
+        "description": "Test error handling - start date after end date (will return 400 Bad Request)"
+      },
+      "response": []
+    }
+  ]
+}
