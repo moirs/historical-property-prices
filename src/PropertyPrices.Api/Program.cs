@@ -1,6 +1,8 @@
 using Polly;
 using Polly.Extensions.Http;
+using PropertyPrices.Api.Models;
 using PropertyPrices.Core;
+using PropertyPrices.Core.Transformations;
 using PropertyPrices.Infrastructure.Data;
 using Serilog;
 
@@ -50,6 +52,32 @@ builder.Services
 
 var app = builder.Build();
 
+// Helper function to build SPARQL query
+static string BuildSparqlQuery(PropertySearchRequest request)
+{
+    // For now, return a basic query that fetches recent properties
+    // This would be enhanced with the query builder in a real implementation
+    const string baseQuery = """
+        PREFIX ppd: <http://purl.org/voc/ppd#>
+        PREFIX ns0: <http://purl.org/linked-data/cube#>
+        PREFIX ns1: <http://purl.org/linked-data/sdmx/2009/measure#>
+        PREFIX ns2: <http://purl.org/linked-data/sdmx/2009/dimension#>
+        
+        SELECT DISTINCT ?property ?address ?postcode ?price ?date
+        WHERE {
+            ?s a ppd:PriceAddress ;
+               ppd:propertyAddress ?address ;
+               ppd:postcode ?postcode ;
+               ppd:pricePaid ?price ;
+               ppd:transactionDate ?date .
+            ?s ns2:refPeriod ?period .
+        }
+        LIMIT 1000
+        """;
+    
+    return baseQuery;
+}
+
 // Configure pipeline
 if (app.Environment.IsDevelopment())
 {
@@ -63,6 +91,103 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = Dat
     .WithName("Health")
     .Produces<HealthResponse>(StatusCodes.Status200OK)
     .WithDescription("Health check endpoint");
+
+// Property search endpoint
+app.MapPost("/properties/search", 
+    async (PropertySearchRequest request, SparqlDataAccessClient dataAccessClient, ILogger<Program> log) =>
+{
+    try
+    {
+        // Validate request
+        var validationErrors = request.Validate();
+        if (validationErrors.Count > 0)
+        {
+            return Results.BadRequest(new
+            {
+                title = "Validation failed",
+                status = StatusCodes.Status400BadRequest,
+                detail = string.Join("; ", validationErrors)
+            });
+        }
+
+        // Build and execute SPARQL query
+        log.LogInformation("Searching properties with filters: postcode={Postcode}, dateFrom={DateFrom}, dateTo={DateTo}, priceMin={PriceMin}, priceMax={PriceMax}",
+            request.Postcode, request.DateFrom, request.DateTo, request.PriceMin, request.PriceMax);
+
+        // For now, execute a simple query without using the query builder
+        // (Query builder would need to be enhanced for complex queries)
+        var sparqlQuery = BuildSparqlQuery(request);
+        var rawResults = await dataAccessClient.ExecuteQueryAsync(sparqlQuery);
+
+        // Transform results
+        var transformedResults = PropertySaleTransformer.TransformBulk(rawResults);
+
+        // Apply filters
+        var filtered = transformedResults
+            .FilterByPostcodeArea(request.Postcode ?? "")
+            .Where(x => request.DateFrom == null || x.TransactionDate >= request.DateFrom)
+            .Where(x => request.DateTo == null || x.TransactionDate <= request.DateTo)
+            .Where(x => request.PriceMin == null || x.Price >= request.PriceMin)
+            .Where(x => request.PriceMax == null || x.Price <= request.PriceMax)
+            .ToList();
+
+        // Apply pagination
+        var totalCount = filtered.Count;
+        var paginatedResults = filtered
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .Select(x => new PropertyDto
+            {
+                Address = x.Address.StreetName,
+                Postcode = x.Address.Postcode,
+                PostcodeArea = x.Address.PostcodeArea,
+                Price = x.Price,
+                TransactionDate = x.TransactionDate
+            })
+            .ToList();
+
+        var response = new PropertySearchResponse
+        {
+            Results = paginatedResults,
+            TotalCount = totalCount,
+            PageNumber = request.PageNumber,
+            PageSize = request.PageSize
+        };
+
+        log.LogInformation("Search completed: found {TotalCount} properties, returning {Count} on page {PageNumber}",
+            totalCount, paginatedResults.Count, request.PageNumber);
+
+        return Results.Ok(response);
+    }
+    catch (ArgumentException ex)
+    {
+        log.LogWarning("Invalid search request: {Message}", ex.Message);
+        return Results.BadRequest(new
+        {
+            title = "Invalid search request",
+            status = StatusCodes.Status400BadRequest,
+            detail = ex.Message
+        });
+    }
+    catch (OperationCanceledException ex)
+    {
+        log.LogError("Search request timed out: {Message}", ex.Message);
+        return Results.StatusCode(StatusCodes.Status504GatewayTimeout);
+    }
+    catch (Exception ex)
+    {
+        log.LogError(ex, "Error executing property search");
+        return Results.Problem(
+            detail: "An error occurred while searching for properties",
+            title: "Internal server error",
+            statusCode: StatusCodes.Status500InternalServerError);
+    }
+})
+.WithName("Search Properties")
+.Produces<PropertySearchResponse>(StatusCodes.Status200OK)
+.Produces(StatusCodes.Status400BadRequest)
+.Produces(StatusCodes.Status500InternalServerError)
+.WithDescription("Search for properties with optional filters");
 
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 logger.LogInformation("PropertyPrices API starting...");
