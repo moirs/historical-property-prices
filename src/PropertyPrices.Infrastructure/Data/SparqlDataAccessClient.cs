@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using PropertyPrices.Core;
+using PropertyPrices.Core.Models;
 using PropertyPrices.Infrastructure.Data.Exceptions;
 using PropertyPrices.Infrastructure.Data.Models;
 

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
 using PropertyPrices.Core;
+using PropertyPrices.Core.Models;
 using PropertyPrices.Infrastructure.Data;
 using PropertyPrices.Infrastructure.Data.Exceptions;
 using PropertyPrices.Infrastructure.Data.Models;
