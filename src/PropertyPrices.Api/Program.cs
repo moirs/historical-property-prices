@@ -82,7 +82,12 @@ static string BuildSparqlQuery(PropertySearchRequest request)
     // VALUES clause for postcode if provided
     if (!string.IsNullOrEmpty(request.Postcode))
     {
-        var normalizedPostcode = request.Postcode.Replace(" ", "");
+        // Normalize postcode: trim, uppercase, and ensure single space between parts
+        // UK postcodes format: "AA9A 9AA" or similar (with space)
+        var normalized = request.Postcode.Trim().ToUpper();
+        // Split on whitespace and rejoin with single space to normalize multiple spaces
+        var parts = normalized.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+        var normalizedPostcode = string.Join(" ", parts);
         query.AppendLine($"  VALUES ?postcode {{\"{normalizedPostcode}\"^^xsd:string}}");
     }
     

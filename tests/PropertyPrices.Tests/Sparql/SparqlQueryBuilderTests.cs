@@ -37,8 +37,8 @@ public class SparqlQueryBuilderTests
             .Build();
 
         // Assert
-        query.Should().Contain("SW1A1AA"); // Should be normalized (space removed, uppercase)
-        query.Should().Contain("VALUES ?postcode {\"SW1A1AA\"^^xsd:string}");
+        query.Should().Contain("SW1A 1AA"); // Should be normalized (uppercase, space preserved)
+        query.Should().Contain("VALUES ?postcode {\"SW1A 1AA\"^^xsd:string}");
     }
 
     [Fact]
@@ -161,7 +161,7 @@ public class SparqlQueryBuilderTests
             .Build();
 
         // Assert
-        query.Should().Contain("M11AA");
+        query.Should().Contain("M1 1AA");
         query.Should().Contain("2022-01-01");
         query.Should().Contain("2022-12-31");
         query.Should().Contain("LIMIT 100");
@@ -333,6 +333,6 @@ public class SparqlQueryBuilderTests
             .Build();
 
         // Assert
-        query.Should().Contain("M11AA"); // Should be uppercase and no space
+        query.Should().Contain("M1 1AA"); // Should be uppercase and space preserved
     }
 }

@@ -138,7 +138,12 @@ PREFIX lrcommon: <http://landregistry.data.gov.uk/def/common/>
         // VALUES clause for postcode parameter (using SPARQL 1.1 VALUES syntax)
         if (!string.IsNullOrEmpty(_postcode))
         {
-            var normalizedPostcode = _postcode.Replace(" ", "");
+            // Normalize postcode: trim, uppercase, and ensure single space between parts
+            // UK postcodes format: "AA9A 9AA" or similar (with space)
+            var normalized = _postcode.Trim().ToUpper();
+            // Split on whitespace and rejoin with single space to normalize multiple spaces
+            var parts = normalized.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            var normalizedPostcode = string.Join(" ", parts);
             query.AppendLine($"  VALUES ?postcode {{\"{normalizedPostcode}\"^^xsd:string}}");
         }
         
