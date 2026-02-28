@@ -122,7 +122,7 @@ public class SparqlDataAccessClient
 
     /// <summary>
     /// Parses SPARQL JSON results into a list of PropertySaleRecord objects.
-    /// Handles the W3C SPARQL JSON Results Format.
+    /// Handles the W3C SPARQL JSON Results Format with HM Land Registry PPD ontology variables.
     /// </summary>
     private List<PropertySaleRecord> ParseSparqlJsonResults(string jsonContent)
     {
@@ -142,17 +142,30 @@ public class SparqlDataAccessClient
 
             foreach (var binding in bindings.EnumerateArray())
             {
+                // Build address from separate components (paon, saon, street, town, county)
+                var paon = GetBindingValue(binding, "paon");
+                var saon = GetBindingValue(binding, "saon");
+                var street = GetBindingValue(binding, "street");
+                var town = GetBindingValue(binding, "town");
+                var county = GetBindingValue(binding, "county");
+                
+                // Combine address parts
+                var addressParts = new[] { paon, saon, street, town, county }
+                    .Where(p => !string.IsNullOrWhiteSpace(p))
+                    .ToList();
+                var fullAddress = string.Join(", ", addressParts);
+
                 var record = new PropertySaleRecord
                 {
-                    PropertyUri = GetBindingValue(binding, "property"),
-                    Address = GetBindingValue(binding, "address"),
+                    PropertyUri = null, // HM Land Registry doesn't return property URI in PPD queries
+                    Address = fullAddress,
                     Postcode = GetBindingValue(binding, "postcode"),
-                    PropertyType = GetBindingValue(binding, "type"),
+                    PropertyType = null, // HM Land Registry PPD doesn't include property type in our query
                     RetrievedAt = DateTime.UtcNow
                 };
 
-                // Parse price (should be numeric)
-                var priceStr = GetBindingValue(binding, "price");
+                // Parse price (should be numeric, HM Land Registry returns as amount)
+                var priceStr = GetBindingValue(binding, "amount");
                 if (!string.IsNullOrEmpty(priceStr) && decimal.TryParse(priceStr, out var price))
                 {
                     record.Price = price;

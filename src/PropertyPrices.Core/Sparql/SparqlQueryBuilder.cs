@@ -18,8 +18,15 @@ public class SparqlQueryBuilder
     private int? _offset;
 
     private const string SparqlPrefixes = @"
-PREFIX ppd: <http://purl.org/voc/ppd#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX sr: <http://data.ordnancesurvey.co.uk/ontology/spatialrelations/>
+PREFIX ukhpi: <http://landregistry.data.gov.uk/def/ukhpi/>
+PREFIX lrppi: <http://landregistry.data.gov.uk/def/ppi/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX lrcommon: <http://landregistry.data.gov.uk/def/common/>
 ";
 
     /// <summary>
@@ -101,19 +108,17 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
         // Add prefixes
         query.AppendLine(SparqlPrefixes);
         
-        // Start SELECT clause - request essential variables only
-        query.AppendLine("SELECT DISTINCT ?address ?postcode ?price ?date");
-        if (_propertyType.HasValue)
-        {
-            query.Append(" ?type");
-        }
-        query.AppendLine();
+        // Start SELECT clause - returns: paon, saon, street, town, county, postcode, amount, date, category
+        query.AppendLine("SELECT ?paon ?saon ?street ?town ?county ?postcode ?amount ?date ?category");
         query.AppendLine("WHERE {");
         
         // Build WHERE clauses dynamically based on filters
         BuildWhereClause(query);
         
         query.AppendLine("}");
+        
+        // Add ORDER BY clause
+        query.AppendLine("ORDER BY ?amount");
         
         // Add pagination
         if (_limit.HasValue)
@@ -130,31 +135,32 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
     private void BuildWhereClause(StringBuilder query)
     {
-        // Base pattern: match property transactions from HM Land Registry Price Paid Data
-        // Using the PPD (Price Paid Data) ontology
-        query.AppendLine("  ?transaction ppd:propertyAddress ?address .");
-        query.AppendLine("  ?transaction ppd:postcode ?postcode .");
-        query.AppendLine("  ?transaction ppd:pricePaid ?price .");
-        query.AppendLine("  ?transaction ppd:transactionDate ?date .");
-        
-        // Add optional property type filter
-        if (_propertyType.HasValue)
-        {
-            query.AppendLine("  ?transaction ppd:propertyType ?type .");
-        }
-        
-        // Add filters
+        // VALUES clause for postcode parameter (using SPARQL 1.1 VALUES syntax)
         if (!string.IsNullOrEmpty(_postcode))
         {
-            // Remove spaces for SPARQL query
             var normalizedPostcode = _postcode.Replace(" ", "");
-            query.AppendLine($"  FILTER(?postcode = \"{normalizedPostcode}\")");
+            query.AppendLine($"  VALUES ?postcode {{\"{normalizedPostcode}\"^^xsd:string}}");
         }
         
+        // Core address and transaction pattern
+        query.AppendLine("  ?addr lrcommon:postcode ?postcode .");
+        query.AppendLine("  ?transx lrppi:propertyAddress ?addr ;");
+        query.AppendLine("          lrppi:pricePaid ?amount ;");
+        query.AppendLine("          lrppi:transactionDate ?date ;");
+        query.AppendLine("          lrppi:transactionCategory/skos:prefLabel ?category .");
+        
+        // Optional address components
+        query.AppendLine("  OPTIONAL {?addr lrcommon:county ?county}");
+        query.AppendLine("  OPTIONAL {?addr lrcommon:paon ?paon}");
+        query.AppendLine("  OPTIONAL {?addr lrcommon:saon ?saon}");
+        query.AppendLine("  OPTIONAL {?addr lrcommon:street ?street}");
+        query.AppendLine("  OPTIONAL {?addr lrcommon:town ?town}");
+        
+        // Add filters if specified (these are in addition to VALUES clause)
         if (!string.IsNullOrEmpty(_addressContains))
         {
-            // Case-insensitive SPARQL FILTER with regex
-            query.AppendLine($"  FILTER(regex(str(?address), \"{_addressContains}\", \"i\"))");
+            // Case-insensitive SPARQL FILTER with regex on address properties
+            query.AppendLine($"  FILTER(regex(concat(str(?paon), \" \", str(?street), \" \", str(?town)), \"{_addressContains}\", \"i\"))");
         }
         
         if (_startDate.HasValue)
@@ -167,12 +173,6 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
         {
             var endDateXsd = $"\"{_endDate:yyyy-MM-dd}\"^^xsd:date";
             query.AppendLine($"  FILTER(?date <= {endDateXsd})");
-        }
-        
-        if (_propertyType.HasValue)
-        {
-            var typeValue = PropertyTypeToSparqlValue(_propertyType.Value);
-            query.AppendLine($"  FILTER(?type = \"{typeValue}\")");
         }
     }
 

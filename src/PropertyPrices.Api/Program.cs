@@ -5,6 +5,7 @@ using PropertyPrices.Core;
 using PropertyPrices.Core.Transformations;
 using PropertyPrices.Infrastructure.Data;
 using Serilog;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,26 +56,79 @@ var app = builder.Build();
 // Helper function to build SPARQL query
 static string BuildSparqlQuery(PropertySearchRequest request)
 {
-    // HM Land Registry SPARQL endpoint uses the following vocabularies:
-    // ppd: http://purl.org/voc/ppd# - Price Paid Data ontology
-    // lrppi: http://landregistry.data.gov.uk/def/ppi/ - Land Registry PPI ontology
-    // The actual RDF resource naming varies, using /data/ukhpi/ namespace
+    // HM Land Registry SPARQL endpoint uses correct Land Registry ontologies:
+    // lrcommon: http://landregistry.data.gov.uk/def/common/ - Address properties
+    // lrppi: http://landregistry.data.gov.uk/def/ppi/ - Price Paid Data properties
+    // skos: http://www.w3.org/2004/02/skos/core# - For category labels
     
-    const string baseQuery = """
-        PREFIX ppd: <http://purl.org/voc/ppd#>
-        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-        
-        SELECT DISTINCT ?address ?postcode ?price ?date
-        WHERE {
-            ?transaction ppd:propertyAddress ?address ;
-                         ppd:postcode ?postcode ;
-                         ppd:pricePaid ?price ;
-                         ppd:transactionDate ?date .
-        }
-        LIMIT 1000
-        """;
+    var query = new StringBuilder();
     
-    return baseQuery;
+    // Add prefixes
+    query.AppendLine("PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>");
+    query.AppendLine("PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>");
+    query.AppendLine("PREFIX owl: <http://www.w3.org/2002/07/owl#>");
+    query.AppendLine("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>");
+    query.AppendLine("PREFIX sr: <http://data.ordnancesurvey.co.uk/ontology/spatialrelations/>");
+    query.AppendLine("PREFIX ukhpi: <http://landregistry.data.gov.uk/def/ukhpi/>");
+    query.AppendLine("PREFIX lrppi: <http://landregistry.data.gov.uk/def/ppi/>");
+    query.AppendLine("PREFIX skos: <http://www.w3.org/2004/02/skos/core#>");
+    query.AppendLine("PREFIX lrcommon: <http://landregistry.data.gov.uk/def/common/>");
+    query.AppendLine();
+    
+    // SELECT clause
+    query.AppendLine("SELECT ?paon ?saon ?street ?town ?county ?postcode ?amount ?date ?category");
+    query.AppendLine("WHERE {");
+    
+    // VALUES clause for postcode if provided
+    if (!string.IsNullOrEmpty(request.Postcode))
+    {
+        var normalizedPostcode = request.Postcode.Replace(" ", "");
+        query.AppendLine($"  VALUES ?postcode {{\"{normalizedPostcode}\"^^xsd:string}}");
+    }
+    
+    // Core query pattern
+    query.AppendLine("  ?addr lrcommon:postcode ?postcode .");
+    query.AppendLine("  ?transx lrppi:propertyAddress ?addr ;");
+    query.AppendLine("          lrppi:pricePaid ?amount ;");
+    query.AppendLine("          lrppi:transactionDate ?date ;");
+    query.AppendLine("          lrppi:transactionCategory/skos:prefLabel ?category .");
+    
+    // Optional address components
+    query.AppendLine("  OPTIONAL {?addr lrcommon:county ?county}");
+    query.AppendLine("  OPTIONAL {?addr lrcommon:paon ?paon}");
+    query.AppendLine("  OPTIONAL {?addr lrcommon:saon ?saon}");
+    query.AppendLine("  OPTIONAL {?addr lrcommon:street ?street}");
+    query.AppendLine("  OPTIONAL {?addr lrcommon:town ?town}");
+    
+    // Add date range filters if provided
+    if (request.DateFrom.HasValue)
+    {
+        var startDate = request.DateFrom.Value.ToString("yyyy-MM-dd");
+        query.AppendLine($"  FILTER(?date >= \"{startDate}\"^^xsd:date)");
+    }
+    
+    if (request.DateTo.HasValue)
+    {
+        var endDate = request.DateTo.Value.ToString("yyyy-MM-dd");
+        query.AppendLine($"  FILTER(?date <= \"{endDate}\"^^xsd:date)");
+    }
+    
+    query.AppendLine("}");
+    query.AppendLine("ORDER BY ?amount");
+    
+    // Add pagination
+    if (request.PageSize > 0)
+    {
+        query.AppendLine($"LIMIT {request.PageSize}");
+    }
+    
+    if (request.PageNumber > 1)
+    {
+        var offset = (request.PageNumber - 1) * request.PageSize;
+        query.AppendLine($"OFFSET {offset}");
+    }
+    
+    return query.ToString();
 }
 
 // Configure pipeline
@@ -116,6 +170,8 @@ app.MapPost("/properties/search",
         // For now, execute a simple query without using the query builder
         // (Query builder would need to be enhanced for complex queries)
         var sparqlQuery = BuildSparqlQuery(request);
+        log.LogInformation("SPARQL Query to be executed: {Query}", sparqlQuery);
+
         var rawResults = await dataAccessClient.ExecuteQueryAsync(sparqlQuery);
 
         // Transform results

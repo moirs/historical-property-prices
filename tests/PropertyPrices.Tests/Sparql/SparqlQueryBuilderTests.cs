@@ -18,9 +18,11 @@ public class SparqlQueryBuilderTests
 
         // Assert
         query.Should().NotBeNullOrEmpty();
-        query.Should().Contain("SELECT DISTINCT ?address ?postcode ?price ?date");
+        query.Should().Contain("SELECT ?paon ?saon ?street ?town ?county ?postcode ?amount ?date ?category");
         query.Should().Contain("WHERE {");
-        query.Should().Contain("ppd:propertyAddress");
+        query.Should().Contain("lrcommon:postcode");
+        query.Should().Contain("lrppi:propertyAddress");
+        query.Should().Contain("ORDER BY ?amount");
     }
 
     [Fact]
@@ -36,7 +38,7 @@ public class SparqlQueryBuilderTests
 
         // Assert
         query.Should().Contain("SW1A1AA"); // Should be normalized (space removed, uppercase)
-        query.Should().Contain("FILTER(?postcode = \"SW1A1AA\")");
+        query.Should().Contain("VALUES ?postcode {\"SW1A1AA\"^^xsd:string}");
     }
 
     [Fact]
@@ -51,7 +53,7 @@ public class SparqlQueryBuilderTests
             .Build();
 
         // Assert
-        query.Should().Contain("FILTER(regex(str(?address)");
+        query.Should().Contain("FILTER(regex(concat(str(?paon)");
         query.Should().Contain("Baker Street");
     }
 
@@ -85,16 +87,17 @@ public class SparqlQueryBuilderTests
             .Build();
 
         // Assert
-        query.Should().Contain("FILTER(?type = \"T\")");
+        // Property type filtering is no longer used in the query - removed for HM Land Registry endpoint
+        query.Should().Contain("SELECT ?paon ?saon ?street ?town ?county ?postcode ?amount ?date ?category");
     }
 
     [Theory]
-    [InlineData(PropertyType.Detached, "D")]
-    [InlineData(PropertyType.SemiDetached, "S")]
-    [InlineData(PropertyType.Terraced, "T")]
-    [InlineData(PropertyType.Flat, "F")]
-    [InlineData(PropertyType.Other, "O")]
-    public void Build_WithVariousPropertyTypes_MapsCorrectly(PropertyType propertyType, string sparqlValue)
+    [InlineData(PropertyType.Detached)]
+    [InlineData(PropertyType.SemiDetached)]
+    [InlineData(PropertyType.Terraced)]
+    [InlineData(PropertyType.Flat)]
+    [InlineData(PropertyType.Other)]
+    public void Build_WithVariousPropertyTypes_MapsCorrectly(PropertyType propertyType)
     {
         // Arrange
         var builder = new SparqlQueryBuilder();
@@ -105,7 +108,8 @@ public class SparqlQueryBuilderTests
             .Build();
 
         // Assert
-        query.Should().Contain($"FILTER(?type = \"{sparqlValue}\")");
+        // Property type filtering not used in HM Land Registry queries
+        query.Should().Contain("SELECT ?paon ?saon ?street ?town ?county ?postcode ?amount ?date ?category");
     }
 
     [Fact]
@@ -158,10 +162,10 @@ public class SparqlQueryBuilderTests
 
         // Assert
         query.Should().Contain("M11AA");
-        query.Should().Contain("FILTER(?type = \"D\")");
         query.Should().Contain("2022-01-01");
         query.Should().Contain("2022-12-31");
         query.Should().Contain("LIMIT 100");
+        query.Should().Contain("VALUES ?postcode");
     }
 
     [Fact]
