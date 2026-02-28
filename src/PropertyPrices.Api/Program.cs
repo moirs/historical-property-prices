@@ -183,8 +183,8 @@ app.MapPost("/properties/search",
         var transformedResults = PropertySaleTransformer.TransformBulk(rawResults);
 
         // Apply filters
+        // Note: Postcode filtering already done at SPARQL level, no need to filter again
         var filtered = transformedResults
-            .FilterByPostcodeArea(request.Postcode ?? "")
             .Where(x => request.DateFrom == null || x.TransactionDate >= request.DateFrom)
             .Where(x => request.DateTo == null || x.TransactionDate <= request.DateTo)
             .Where(x => request.PriceMin == null || x.Price >= request.PriceMin)
