@@ -55,22 +55,21 @@ var app = builder.Build();
 // Helper function to build SPARQL query
 static string BuildSparqlQuery(PropertySearchRequest request)
 {
-    // For now, return a basic query that fetches recent properties
-    // This would be enhanced with the query builder in a real implementation
+    // HM Land Registry SPARQL endpoint uses the following vocabularies:
+    // ppd: http://purl.org/voc/ppd# - Price Paid Data ontology
+    // lrppi: http://landregistry.data.gov.uk/def/ppi/ - Land Registry PPI ontology
+    // The actual RDF resource naming varies, using /data/ukhpi/ namespace
+    
     const string baseQuery = """
         PREFIX ppd: <http://purl.org/voc/ppd#>
-        PREFIX ns0: <http://purl.org/linked-data/cube#>
-        PREFIX ns1: <http://purl.org/linked-data/sdmx/2009/measure#>
-        PREFIX ns2: <http://purl.org/linked-data/sdmx/2009/dimension#>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
         
-        SELECT DISTINCT ?property ?address ?postcode ?price ?date
+        SELECT DISTINCT ?address ?postcode ?price ?date
         WHERE {
-            ?s a ppd:PriceAddress ;
-               ppd:propertyAddress ?address ;
-               ppd:postcode ?postcode ;
-               ppd:pricePaid ?price ;
-               ppd:transactionDate ?date .
-            ?s ns2:refPeriod ?period .
+            ?transaction ppd:propertyAddress ?address ;
+                         ppd:postcode ?postcode ;
+                         ppd:pricePaid ?price ;
+                         ppd:transactionDate ?date .
         }
         LIMIT 1000
         """;

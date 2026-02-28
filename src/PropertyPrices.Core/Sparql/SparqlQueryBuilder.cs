@@ -18,10 +18,8 @@ public class SparqlQueryBuilder
     private int? _offset;
 
     private const string SparqlPrefixes = @"
-PREFIX ppd: <http://data.ordnancesurvey.co.uk/ontology/property/Adapted>
-PREFIX prop: <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
-PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ppd: <http://purl.org/voc/ppd#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 ";
 
     /// <summary>
@@ -104,7 +102,12 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         query.AppendLine(SparqlPrefixes);
         
         // Start SELECT clause - request essential variables only
-        query.AppendLine("SELECT ?property ?address ?postcode ?price ?date ?type");
+        query.AppendLine("SELECT DISTINCT ?address ?postcode ?price ?date");
+        if (_propertyType.HasValue)
+        {
+            query.Append(" ?type");
+        }
+        query.AppendLine();
         query.AppendLine("WHERE {");
         
         // Build WHERE clauses dynamically based on filters
@@ -127,24 +130,30 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
     private void BuildWhereClause(StringBuilder query)
     {
-        // Base pattern: match property transactions
-        query.AppendLine("  ?property prop: ppd:PricePaidRecord .");
-        query.AppendLine("  ?property ppd:address ?address .");
-        query.AppendLine("  ?property ppd:pricePaid ?price .");
-        query.AppendLine("  ?property ppd:transactionDate ?date .");
-        query.AppendLine("  ?property ppd:propertyType ?type .");
+        // Base pattern: match property transactions from HM Land Registry Price Paid Data
+        // Using the PPD (Price Paid Data) ontology
+        query.AppendLine("  ?transaction ppd:propertyAddress ?address .");
+        query.AppendLine("  ?transaction ppd:postcode ?postcode .");
+        query.AppendLine("  ?transaction ppd:pricePaid ?price .");
+        query.AppendLine("  ?transaction ppd:transactionDate ?date .");
+        
+        // Add optional property type filter
+        if (_propertyType.HasValue)
+        {
+            query.AppendLine("  ?transaction ppd:propertyType ?type .");
+        }
         
         // Add filters
         if (!string.IsNullOrEmpty(_postcode))
         {
             // Remove spaces for SPARQL query
             var normalizedPostcode = _postcode.Replace(" ", "");
-            query.AppendLine($"  ?property ppd:postcode \"{normalizedPostcode}\" .");
+            query.AppendLine($"  FILTER(?postcode = \"{normalizedPostcode}\")");
         }
         
         if (!string.IsNullOrEmpty(_addressContains))
         {
-            // Case-insensitive SPARQL FILTER with regex - don't escape, let SPARQL handle it
+            // Case-insensitive SPARQL FILTER with regex
             query.AppendLine($"  FILTER(regex(str(?address), \"{_addressContains}\", \"i\"))");
         }
         

@@ -18,9 +18,9 @@ public class SparqlQueryBuilderTests
 
         // Assert
         query.Should().NotBeNullOrEmpty();
-        query.Should().Contain("SELECT ?property ?address ?postcode ?price ?date ?type");
+        query.Should().Contain("SELECT DISTINCT ?address ?postcode ?price ?date");
         query.Should().Contain("WHERE {");
-        query.Should().Contain("ppd:PricePaidRecord");
+        query.Should().Contain("ppd:propertyAddress");
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class SparqlQueryBuilderTests
 
         // Assert
         query.Should().Contain("SW1A1AA"); // Should be normalized (space removed, uppercase)
-        query.Should().Contain("?property ppd:postcode");
+        query.Should().Contain("FILTER(?postcode = \"SW1A1AA\")");
     }
 
     [Fact]
