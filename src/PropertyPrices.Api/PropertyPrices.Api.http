@@ -4,3 +4,20 @@ GET {{PropertyPrices.Api_HostAddress}}/health/
 Accept: application/json
 
 ###
+
+### UK Land Registry SPARQL - POST Example
+POST http://landregistry.data.gov.uk/landregistry/sparql
+Content-Type: application/x-www-form-urlencoded
+Accept: application/sparql-results+json
+
+query=
+PREFIX lrppi: <http://landregistry.data.gov.uk/def/ppi/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?price ?date
+WHERE {
+  ?tx a lrppi:TransactionRecord ;
+      lrppi:pricePaid ?price ;
+      lrppi:transactionDate ?date .
+}
+LIMIT 10

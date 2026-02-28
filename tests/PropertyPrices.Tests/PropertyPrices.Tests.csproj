@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\PropertyPrices.Core\PropertyPrices.Core.csproj" />
     <ProjectReference Include="..\..\src\PropertyPrices.Api\PropertyPrices.Api.csproj" />
   </ItemGroup>
 
