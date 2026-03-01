@@ -111,33 +111,46 @@ public class PropertySearchRequestTests
         var errors = request.Validate();
 
         // Assert
-        errors.Should().ContainMatch("*PageSize*between 1 and 1000*");
+        errors.Should().ContainMatch("*PageSize*between 1 and 100*");
     }
 
     [Fact]
     public void Validate_WithPageSizeTooLarge_ReturnsError()
     {
         // Arrange
-        var request = new PropertySearchRequest { PageSize = 1001 };
+        var request = new PropertySearchRequest { PageSize = 101 };
 
         // Act
         var errors = request.Validate();
 
         // Assert
-        errors.Should().ContainMatch("*PageSize*between 1 and 1000*");
+        errors.Should().ContainMatch("*PageSize*between 1 and 100*");
     }
 
     [Fact]
     public void Validate_WithMaxPageSize_ReturnsNoErrors()
     {
         // Arrange
-        var request = new PropertySearchRequest { PageSize = 1000 };
+        var request = new PropertySearchRequest { PageSize = 100 };
 
         // Act
         var errors = request.Validate();
 
         // Assert
         errors.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Validate_WithCustomMaxPageSize_ValidatesAgainstCustomMax()
+    {
+        // Arrange
+        var request = new PropertySearchRequest { PageSize = 201 };
+
+        // Act
+        var errors = request.Validate(maxPageSize: 200);
+
+        // Assert
+        errors.Should().ContainMatch("*PageSize*between 1 and 200*");
     }
 
     [Fact]
@@ -151,7 +164,7 @@ public class PropertySearchRequestTests
             PriceMin = 1000000,
             PriceMax = 100000,
             PageNumber = -1,
-            PageSize = 2000
+            PageSize = 101
         };
 
         // Act

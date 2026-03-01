@@ -32,8 +32,9 @@ public class PropertySearchRequest
     /// <summary>
     /// Validates the request parameters.
     /// </summary>
+    /// <param name="maxPageSize">Maximum allowed page size from configuration.</param>
     /// <returns>List of validation errors, empty if valid.</returns>
-    public List<string> Validate()
+    public List<string> Validate(int maxPageSize = 100)
     {
         var errors = new List<string>();
 
@@ -52,8 +53,8 @@ public class PropertySearchRequest
         if (PageNumber < 1)
             errors.Add("PageNumber must be >= 1.");
 
-        if (PageSize < 1 || PageSize > 1000)
-            errors.Add("PageSize must be between 1 and 1000.");
+        if (PageSize < 1 || PageSize > maxPageSize)
+            errors.Add($"PageSize must be between 1 and {maxPageSize}.");
 
         return errors;
     }

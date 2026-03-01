@@ -35,6 +35,11 @@ var sparqlOptions = new SparqlEndpointOptions();
 builder.Configuration.GetSection("SparqlEndpoint").Bind(sparqlOptions);
 builder.Services.AddSingleton(sparqlOptions);
 
+// Configure Pagination options
+var paginationOptions = new PaginationOptions();
+builder.Configuration.GetSection("Pagination").Bind(paginationOptions);
+builder.Services.AddSingleton(paginationOptions);
+
 // Configure HTTP client for SPARQL queries with Polly resilience policies
 var sparqlHttpPolicy = HttpPolicyExtensions
     .HandleTransientHttpError()
@@ -70,12 +75,12 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = Dat
 
 // Property search endpoint
 app.MapPost("/properties/search", 
-    async (PropertySearchRequest request, SparqlDataAccessClient dataAccessClient, ILogger<Program> log) =>
+    async (PropertySearchRequest request, SparqlDataAccessClient dataAccessClient, PaginationOptions paginationOptions, ILogger<Program> log) =>
 {
     try
     {
         // Validate request
-        var validationErrors = request.Validate();
+        var validationErrors = request.Validate(paginationOptions.MaxPageSize);
         if (validationErrors.Count > 0)
         {
             return Results.BadRequest(new
