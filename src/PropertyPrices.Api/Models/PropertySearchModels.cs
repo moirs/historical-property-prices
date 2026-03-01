@@ -52,9 +52,9 @@ public class PropertySearchRequest
 
         if (!string.IsNullOrEmpty(PropertyType))
         {
-            var validTypes = new[] { "D", "S", "T", "F", "O" };
-            if (!validTypes.Contains(PropertyType.ToUpper()))
-                errors.Add("PropertyType must be one of: D (Detached), S (Semi-Detached), T (Terraced), F (Flat), O (Other).");
+            var validTypes = new[] { "D", "S", "T", "F", "O", "Detached", "Semi-Detached", "Terraced", "Flat", "Other" };
+            if (!validTypes.Contains(PropertyType, StringComparer.OrdinalIgnoreCase))
+                errors.Add("PropertyType must be one of: D, S, T, F, O, Detached, Semi-Detached, Terraced, Flat, or Other.");
         }
 
         if (PageNumber < 1)

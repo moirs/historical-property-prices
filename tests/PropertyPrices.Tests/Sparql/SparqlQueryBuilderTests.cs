@@ -83,7 +83,7 @@ public class SparqlQueryBuilderTests
         
         // Act
         var query = builder
-            .WithPropertyType(PropertyType.Terraced)
+            .WithPropertyTypeEnum(PropertyType.Terraced)
             .Build();
 
         // Assert
@@ -104,7 +104,7 @@ public class SparqlQueryBuilderTests
         
         // Act
         var query = builder
-            .WithPropertyType(propertyType)
+            .WithPropertyTypeEnum(propertyType)
             .Build();
 
         // Assert
@@ -152,13 +152,13 @@ public class SparqlQueryBuilderTests
         var startDate = new DateOnly(2022, 1, 1);
         var endDate = new DateOnly(2022, 12, 31);
         
-        // Act
-        var query = builder
-            .WithPostcode("M1 1AA")
-            .WithPropertyType(PropertyType.Detached)
-            .WithDateRange(startDate, endDate)
-            .WithPagination(limit: 100)
-            .Build();
+         // Act
+         var query = builder
+             .WithPostcode("M1 1AA")
+             .WithPropertyTypeEnum(PropertyType.Detached)
+             .WithDateRange(startDate, endDate)
+             .WithPagination(limit: 100)
+             .Build();
 
         // Assert
         query.Should().Contain("M1 1AA");
@@ -310,7 +310,7 @@ public class SparqlQueryBuilderTests
             .WithPostcode("SW1A 1AA")
             .WithAddressContains("Street")
             .WithDateRange(new DateOnly(2020, 1, 1), new DateOnly(2023, 12, 31))
-            .WithPropertyType(PropertyType.Flat)
+            .WithPropertyTypeEnum(PropertyType.Flat)
             .WithPagination(10, 5)
             .Build();
 
