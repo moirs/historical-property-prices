@@ -14,6 +14,9 @@ public class PropertySaleInfo
     /// <summary>Gets the transaction date (nullable if data was missing or invalid).</summary>
     public DateOnly? TransactionDate { get; set; }
 
+    /// <summary>Gets or sets the property type (e.g., "Detached", "Semi-Detached", "Terraced", "Flat", "Other").</summary>
+    public string? PropertyType { get; set; }
+
     /// <summary>Gets the date and time when this data was retrieved.</summary>
     public DateTime RetrievedAt { get; set; } = DateTime.UtcNow;
 
@@ -37,11 +40,12 @@ public class PropertySaleInfo
     /// <summary>
     /// Creates a PropertySaleInfo instance with all core properties.
     /// </summary>
-    public PropertySaleInfo(Address address, decimal? price, DateOnly? transactionDate)
+    public PropertySaleInfo(Address address, decimal? price, DateOnly? transactionDate, string? propertyType = null)
     {
         Address = address ?? new Address();
         Price = price;
         TransactionDate = transactionDate;
+        PropertyType = propertyType;
     }
 
     public override string ToString()

@@ -79,6 +79,9 @@ public class PropertyDto
 
     /// <summary>Gets or sets the transaction date.</summary>
     public DateOnly? TransactionDate { get; set; }
+
+    /// <summary>Gets or sets the property type (e.g., "Detached", "Semi-Detached", "Terraced", "Flat", "Other").</summary>
+    public string? PropertyType { get; set; }
 }
 
 /// <summary>

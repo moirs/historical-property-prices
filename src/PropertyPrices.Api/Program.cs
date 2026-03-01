@@ -136,7 +136,8 @@ app.MapPost("/properties/search",
                 Postcode = x.Address.Postcode,
                 PostcodeArea = x.Address.PostcodeArea,
                 Price = x.Price,
-                TransactionDate = x.TransactionDate
+                TransactionDate = x.TransactionDate,
+                PropertyType = x.PropertyType
             })
             .ToList();
 

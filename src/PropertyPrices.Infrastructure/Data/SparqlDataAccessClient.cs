@@ -160,7 +160,7 @@ public class SparqlDataAccessClient
                     PropertyUri = null, // HM Land Registry doesn't return property URI in PPD queries
                     Address = fullAddress,
                     Postcode = GetBindingValue(binding, "postcode"),
-                    PropertyType = null, // HM Land Registry PPD doesn't include property type in our query
+                    PropertyType = GetBindingValue(binding, "propertyType"),
                     RetrievedAt = DateTime.UtcNow
                 };
 
