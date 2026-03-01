@@ -73,7 +73,11 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = Dat
     .Produces<HealthResponse>(StatusCodes.Status200OK)
     .WithDescription("Health check endpoint");
 
-// Property search endpoint
+// Health endpoint
+app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
+    .WithName("Health")
+    .Produces<HealthResponse>(StatusCodes.Status200OK)
+    .WithDescription("Health check endpoint");
 app.MapPost("/properties/search", 
     async (PropertySearchRequest request, SparqlDataAccessClient dataAccessClient, PaginationOptions paginationOptions, ILogger<Program> log) =>
 {
@@ -92,8 +96,8 @@ app.MapPost("/properties/search",
         }
 
         // Build and execute SPARQL query using SparqlQueryBuilder from core project
-        log.LogInformation("Searching properties with filters: postcode={Postcode}, dateFrom={DateFrom}, dateTo={DateTo}, priceMin={PriceMin}, priceMax={PriceMax}",
-            request.Postcode, request.DateFrom, request.DateTo, request.PriceMin, request.PriceMax);
+        log.LogInformation("Searching properties with filters: postcode={Postcode}, dateFrom={DateFrom}, dateTo={DateTo}, priceMin={PriceMin}, priceMax={PriceMax}, propertyType={PropertyType}",
+            request.Postcode, request.DateFrom, request.DateTo, request.PriceMin, request.PriceMax, request.PropertyType);
 
         // Build query using fluent query builder
         var queryBuilder = new SparqlQueryBuilder();
@@ -113,6 +117,11 @@ app.MapPost("/properties/search",
         if (request.PriceMin.HasValue || request.PriceMax.HasValue)
         {
             queryBuilder.WithPriceRange(request.PriceMin, request.PriceMax);
+        }
+        
+        if (!string.IsNullOrEmpty(request.PropertyType))
+        {
+            queryBuilder.WithPropertyType(request.PropertyType);
         }
         
         if (request.PageSize > 0)

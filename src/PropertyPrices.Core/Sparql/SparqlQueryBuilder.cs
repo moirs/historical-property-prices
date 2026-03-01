@@ -14,6 +14,7 @@ public class SparqlQueryBuilder
     private DateOnly? _startDate;
     private DateOnly? _endDate;
     private PropertyType? _propertyType;
+    private string? _propertyTypeFilter;
     private decimal? _minPrice;
     private decimal? _maxPrice;
     private int? _limit;
@@ -89,11 +90,31 @@ PREFIX lrcommon: <http://landregistry.data.gov.uk/def/common/>
     }
 
     /// <summary>
-    /// Sets a property type filter.
+    /// Sets a property type filter (D/S/T/F/O).
     /// </summary>
-    /// <param name="propertyType">The property type to filter on.</param>
+    /// <param name="propertyTypeCode">The property type code: D (Detached), S (Semi-Detached), T (Terraced), F (Flat), O (Other).</param>
     /// <returns>This builder instance for chaining.</returns>
-    public SparqlQueryBuilder WithPropertyType(PropertyType propertyType)
+    /// <exception cref="ArgumentException">Thrown if property type is invalid.</exception>
+    public SparqlQueryBuilder WithPropertyType(string propertyTypeCode)
+    {
+        if (string.IsNullOrWhiteSpace(propertyTypeCode))
+            throw new ArgumentException("Property type code cannot be null or whitespace.", nameof(propertyTypeCode));
+        
+        var normalizedCode = propertyTypeCode.ToUpper();
+        var validCodes = new[] { "D", "S", "T", "F", "O" };
+        if (!validCodes.Contains(normalizedCode))
+            throw new ArgumentException(
+                "Property type must be one of: D (Detached), S (Semi-Detached), T (Terraced), F (Flat), O (Other).",
+                nameof(propertyTypeCode));
+        
+        _propertyTypeFilter = normalizedCode;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets a property type filter using PropertyType enum (for programmatic use).
+    /// </summary>
+    public SparqlQueryBuilder WithPropertyTypeEnum(PropertyType propertyType)
     {
         _propertyType = propertyType;
         return this;
@@ -208,6 +229,17 @@ PREFIX lrcommon: <http://landregistry.data.gov.uk/def/common/>
         if (_maxPrice.HasValue)
         {
             query.AppendLine($"  FILTER(?amount <= {_maxPrice}^^xsd:decimal)");
+        }
+        
+        if (!string.IsNullOrEmpty(_propertyTypeFilter))
+        {
+            query.AppendLine($"  FILTER(?propertyType = \"{_propertyTypeFilter}\")");
+        }
+        
+        if (_propertyType.HasValue)
+        {
+            var propertyTypeCode = PropertyTypeToSparqlValue(_propertyType.Value);
+            query.AppendLine($"  FILTER(?propertyType = \"{propertyTypeCode}\")");
         }
     }
 

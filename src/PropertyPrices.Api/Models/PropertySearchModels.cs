@@ -50,11 +50,25 @@ public class PropertySearchRequest
         if (PriceMax.HasValue && PriceMax < 0)
             errors.Add("PriceMax must be non-negative.");
 
+        if (!string.IsNullOrEmpty(PropertyType))
+        {
+            var validTypes = new[] { "D", "S", "T", "F", "O" };
+            if (!validTypes.Contains(PropertyType.ToUpper()))
+                errors.Add("PropertyType must be one of: D (Detached), S (Semi-Detached), T (Terraced), F (Flat), O (Other).");
+        }
+
         if (PageNumber < 1)
             errors.Add("PageNumber must be >= 1.");
 
         if (PageSize < 1 || PageSize > maxPageSize)
             errors.Add($"PageSize must be between 1 and {maxPageSize}.");
+
+        if (!string.IsNullOrEmpty(PropertyType))
+        {
+            var validTypes = new[] { "D", "S", "T", "F", "O", "Detached", "Semi-Detached", "Terraced", "Flat", "Other" };
+            if (!validTypes.Contains(PropertyType, StringComparer.OrdinalIgnoreCase))
+                errors.Add("PropertyType must be one of: D, S, T, F, O, Detached, Semi-Detached, Terraced, Flat, or Other.");
+        }
 
         return errors;
     }
