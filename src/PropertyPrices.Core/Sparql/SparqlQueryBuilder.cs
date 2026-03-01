@@ -5,7 +5,7 @@ namespace PropertyPrices.Core.Sparql;
 
 /// <summary>
 /// Fluent builder for constructing SPARQL queries against the HM Land Registry endpoint.
-/// Supports composable filters for postcode, address, date range, property type, and pagination.
+/// Supports composable filters for postcode, address, date range, price range, property type, and pagination.
 /// </summary>
 public class SparqlQueryBuilder
 {
@@ -14,6 +14,8 @@ public class SparqlQueryBuilder
     private DateOnly? _startDate;
     private DateOnly? _endDate;
     private PropertyType? _propertyType;
+    private decimal? _minPrice;
+    private decimal? _maxPrice;
     private int? _limit;
     private int? _offset;
 
@@ -68,6 +70,21 @@ PREFIX lrcommon: <http://landregistry.data.gov.uk/def/common/>
         ValidateDateRange(startDate, endDate);
         _startDate = startDate;
         _endDate = endDate;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets a price range filter for property prices (inclusive on both ends).
+    /// </summary>
+    /// <param name="minPrice">The minimum price (inclusive). Pass null to omit minimum price filter.</param>
+    /// <param name="maxPrice">The maximum price (inclusive). Pass null to omit maximum price filter.</param>
+    /// <returns>This builder instance for chaining.</returns>
+    /// <exception cref="ArgumentException">Thrown if price range is invalid.</exception>
+    public SparqlQueryBuilder WithPriceRange(decimal? minPrice, decimal? maxPrice)
+    {
+        ValidatePriceRange(minPrice, maxPrice);
+        _minPrice = minPrice;
+        _maxPrice = maxPrice;
         return this;
     }
 
@@ -179,6 +196,16 @@ PREFIX lrcommon: <http://landregistry.data.gov.uk/def/common/>
             var endDateXsd = $"\"{_endDate:yyyy-MM-dd}\"^^xsd:date";
             query.AppendLine($"  FILTER(?date <= {endDateXsd})");
         }
+        
+        if (_minPrice.HasValue)
+        {
+            query.AppendLine($"  FILTER(?amount >= {_minPrice}^^xsd:decimal)");
+        }
+        
+        if (_maxPrice.HasValue)
+        {
+            query.AppendLine($"  FILTER(?amount <= {_maxPrice}^^xsd:decimal)");
+        }
     }
 
     /// <summary>
@@ -218,6 +245,20 @@ PREFIX lrcommon: <http://landregistry.data.gov.uk/def/common/>
             throw new ArgumentException(
                 $"Start date must be 1995-01-01 or later (HM Land Registry Price Paid data starts from 1995).",
                 nameof(startDate));
+    }
+
+    private static void ValidatePriceRange(decimal? minPrice, decimal? maxPrice)
+    {
+        if (minPrice.HasValue && minPrice < 0)
+            throw new ArgumentException("Minimum price cannot be negative.", nameof(minPrice));
+        
+        if (maxPrice.HasValue && maxPrice < 0)
+            throw new ArgumentException("Maximum price cannot be negative.", nameof(maxPrice));
+        
+        if (minPrice.HasValue && maxPrice.HasValue && minPrice > maxPrice)
+            throw new ArgumentException(
+                $"Minimum price ({minPrice}) cannot be greater than maximum price ({maxPrice}).",
+                nameof(minPrice));
     }
 
     private static void ValidatePagination(int limit, int offset)

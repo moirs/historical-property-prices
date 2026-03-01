@@ -110,6 +110,11 @@ app.MapPost("/properties/search",
             queryBuilder.WithDateRange(startDate, endDate);
         }
         
+        if (request.PriceMin.HasValue || request.PriceMax.HasValue)
+        {
+            queryBuilder.WithPriceRange(request.PriceMin, request.PriceMax);
+        }
+        
         if (request.PageSize > 0)
         {
             queryBuilder.WithPagination(request.PageSize, (request.PageNumber - 1) * request.PageSize);
@@ -123,15 +128,8 @@ app.MapPost("/properties/search",
         // Transform results
         var transformedResults = PropertySaleTransformer.TransformBulk(rawResults);
 
-        // Apply price filters (date range and pagination are already applied at SPARQL level)
-        var filtered = transformedResults
-            .Where(x => request.PriceMin == null || x.Price >= request.PriceMin)
-            .Where(x => request.PriceMax == null || x.Price <= request.PriceMax)
-            .ToList();
-
-        // Results are already paginated at SPARQL level via LIMIT and OFFSET
-        var totalCount = filtered.Count;
-        var paginatedResults = filtered
+        // Results are already filtered and paginated at SPARQL level
+        var paginatedResults = transformedResults
             .Select(x => new PropertyDto
             {
                 Address = x.Address.StreetName,
@@ -145,13 +143,13 @@ app.MapPost("/properties/search",
         var response = new PropertySearchResponse
         {
             Results = paginatedResults,
-            TotalCount = totalCount,
+            TotalCount = paginatedResults.Count,
             PageNumber = request.PageNumber,
             PageSize = request.PageSize
         };
 
         log.LogInformation("Search completed: found {TotalCount} properties, returning {Count} on page {PageNumber}",
-            totalCount, paginatedResults.Count, request.PageNumber);
+            paginatedResults.Count, paginatedResults.Count, request.PageNumber);
 
         return Results.Ok(response);
     }
