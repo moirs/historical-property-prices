@@ -123,20 +123,15 @@ app.MapPost("/properties/search",
         // Transform results
         var transformedResults = PropertySaleTransformer.TransformBulk(rawResults);
 
-        // Apply filters
-        // Note: Postcode filtering already done at SPARQL level, no need to filter again
+        // Apply price filters (date range and pagination are already applied at SPARQL level)
         var filtered = transformedResults
-            .Where(x => request.DateFrom == null || x.TransactionDate >= request.DateFrom)
-            .Where(x => request.DateTo == null || x.TransactionDate <= request.DateTo)
             .Where(x => request.PriceMin == null || x.Price >= request.PriceMin)
             .Where(x => request.PriceMax == null || x.Price <= request.PriceMax)
             .ToList();
 
-        // Apply pagination
+        // Results are already paginated at SPARQL level via LIMIT and OFFSET
         var totalCount = filtered.Count;
         var paginatedResults = filtered
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
             .Select(x => new PropertyDto
             {
                 Address = x.Address.StreetName,
