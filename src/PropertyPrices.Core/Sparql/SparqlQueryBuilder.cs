@@ -183,7 +183,7 @@ PREFIX lrcommon: <http://landregistry.data.gov.uk/def/common/>
         query.AppendLine(SparqlPrefixes);
         
         // COUNT query - returns total count
-        query.AppendLine("SELECT COUNT(?transx) as ?count");
+        query.AppendLine("SELECT (COUNT(?transx) AS ?count)");
         query.AppendLine("WHERE {");
         
         // Build WHERE clauses dynamically based on filters (same as Build())

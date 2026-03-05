@@ -30,6 +30,22 @@ builder.Host.UseSerilog((context, services, loggerConfig) =>
 // Add services
 builder.Services.AddOpenApi();
 
+// Configure CORS for development
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "http://localhost:5175"
+            )
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
 // Configure SPARQL options
 var sparqlOptions = new SparqlEndpointOptions();
 builder.Configuration.GetSection("SparqlEndpoint").Bind(sparqlOptions);
@@ -59,13 +75,19 @@ builder.Services
 
 var app = builder.Build();
 
+// Enable CORS
+app.UseCors("AllowLocalhost");
+
 // Configure pipeline
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    // Skip HTTPS redirect in development
 }
-
-app.UseHttpsRedirection();
+else
+{
+    app.UseHttpsRedirection();
+}
 
 // Health endpoint
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
