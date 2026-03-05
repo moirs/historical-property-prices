@@ -124,7 +124,7 @@ public class SparqlEndpointIntegrationTests
     {
         // Arrange - Query with multiple filters
         var query = new SparqlQueryBuilder()
-            .WithPropertyTypeEnum(PropertyType.Detached)
+            .WithPropertyType("D")
             .WithDateRange(
                 startDate: new DateOnly(2023, 1, 1),
                 endDate: new DateOnly(2023, 12, 31)

@@ -83,33 +83,33 @@ public class SparqlQueryBuilderTests
         
         // Act
         var query = builder
-            .WithPropertyTypeEnum(PropertyType.Terraced)
+            .WithPropertyType("T")
             .Build();
 
         // Assert
-        // Property type filtering is no longer used in the query - removed for HM Land Registry endpoint
         query.Should().Contain("SELECT ?paon ?saon ?street ?town ?county ?postcode ?amount ?date ?category");
+        query.Should().Contain("FILTER(!BOUND(?propertyType)");
     }
 
     [Theory]
-    [InlineData(PropertyType.Detached)]
-    [InlineData(PropertyType.SemiDetached)]
-    [InlineData(PropertyType.Terraced)]
-    [InlineData(PropertyType.Flat)]
-    [InlineData(PropertyType.Other)]
-    public void Build_WithVariousPropertyTypes_MapsCorrectly(PropertyType propertyType)
+    [InlineData("D")]
+    [InlineData("S")]
+    [InlineData("T")]
+    [InlineData("F")]
+    [InlineData("O")]
+    public void Build_WithVariousPropertyTypes_MapsCorrectly(string propertyTypeCode)
     {
         // Arrange
         var builder = new SparqlQueryBuilder();
         
         // Act
         var query = builder
-            .WithPropertyTypeEnum(propertyType)
+            .WithPropertyType(propertyTypeCode)
             .Build();
 
         // Assert
-        // Property type filtering not used in HM Land Registry queries
         query.Should().Contain("SELECT ?paon ?saon ?street ?town ?county ?postcode ?amount ?date ?category");
+        query.Should().Contain("FILTER(!BOUND(?propertyType)");
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public class SparqlQueryBuilderTests
          // Act
          var query = builder
              .WithPostcode("M1 1AA")
-             .WithPropertyTypeEnum(PropertyType.Detached)
+             .WithPropertyType("D")
              .WithDateRange(startDate, endDate)
              .WithPagination(limit: 100)
              .Build();
@@ -310,7 +310,7 @@ public class SparqlQueryBuilderTests
             .WithPostcode("SW1A 1AA")
             .WithAddressContains("Street")
             .WithDateRange(new DateOnly(2020, 1, 1), new DateOnly(2023, 12, 31))
-            .WithPropertyTypeEnum(PropertyType.Flat)
+            .WithPropertyType("F")
             .WithPagination(10, 5)
             .Build();
 
@@ -318,7 +318,7 @@ public class SparqlQueryBuilderTests
         query.Should().NotBeNullOrEmpty();
         query.Should().Contain("SW1A1AA");
         query.Should().Contain("Street");
-        query.Should().Contain("\"F\"");
+        query.Should().Contain("flat");  // lowercase in FILTER
     }
 
     [Fact]

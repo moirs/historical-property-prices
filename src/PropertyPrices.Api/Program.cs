@@ -73,23 +73,6 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = Dat
     .Produces<HealthResponse>(StatusCodes.Status200OK)
     .WithDescription("Health check endpoint");
 
-// Helper method to parse property type string to SPARQL code
-static string? ParsePropertyTypeCode(string? typeString)
-{
-    if (string.IsNullOrWhiteSpace(typeString))
-        return null;
-    
-    return typeString.ToUpperInvariant() switch
-    {
-        "D" or "DETACHED" => "D",
-        "S" or "SEMI-DETACHED" => "S",
-        "T" or "TERRACED" => "T",
-        "F" or "FLAT" => "F",
-        "O" or "OTHER" => "O",
-        _ => null
-    };
-}
-
 app.MapPost("/properties/search",
     async (PropertySearchRequest request, SparqlDataAccessClient dataAccessClient, PaginationOptions paginationOptions, ILogger<Program> log) =>
 {
@@ -133,11 +116,7 @@ app.MapPost("/properties/search",
         
         if (!string.IsNullOrEmpty(request.PropertyType))
         {
-            var propertyTypeCode = ParsePropertyTypeCode(request.PropertyType);
-            if (!string.IsNullOrEmpty(propertyTypeCode))
-            {
-                queryBuilder.WithPropertyType(propertyTypeCode);
-            }
+            queryBuilder.WithPropertyType(request.PropertyType);
         }
         
         if (request.PageSize > 0)

@@ -13,7 +13,6 @@ public class SparqlQueryBuilder
     private string? _addressContains;
     private DateOnly? _startDate;
     private DateOnly? _endDate;
-    private PropertyType? _propertyType;
     private string? _propertyTypeFilter;
     private decimal? _minPrice;
     private decimal? _maxPrice;
@@ -90,33 +89,33 @@ PREFIX lrcommon: <http://landregistry.data.gov.uk/def/common/>
     }
 
     /// <summary>
-    /// Sets a property type filter (D/S/T/F/O).
+    /// Sets a property type filter.
+    /// Accepts either single-letter codes (D/S/T/F/O) or full property type names (Detached/Semi-Detached/Terraced/Flat/Other).
     /// </summary>
-    /// <param name="propertyTypeCode">The property type code: D (Detached), S (Semi-Detached), T (Terraced), F (Flat), O (Other).</param>
+    /// <param name="propertyType">The property type code or name.</param>
     /// <returns>This builder instance for chaining.</returns>
     /// <exception cref="ArgumentException">Thrown if property type is invalid.</exception>
-    public SparqlQueryBuilder WithPropertyType(string propertyTypeCode)
+    public SparqlQueryBuilder WithPropertyType(string propertyType)
     {
-        if (string.IsNullOrWhiteSpace(propertyTypeCode))
-            throw new ArgumentException("Property type code cannot be null or whitespace.", nameof(propertyTypeCode));
+        if (string.IsNullOrWhiteSpace(propertyType))
+            throw new ArgumentException("Property type cannot be null or whitespace.", nameof(propertyType));
         
-        var normalizedCode = propertyTypeCode.ToUpper();
-        var validCodes = new[] { "D", "S", "T", "F", "O" };
-        if (!validCodes.Contains(normalizedCode))
-            throw new ArgumentException(
-                "Property type must be one of: D (Detached), S (Semi-Detached), T (Terraced), F (Flat), O (Other).",
-                nameof(propertyTypeCode));
+        var normalized = propertyType.ToUpper();
         
-        _propertyTypeFilter = normalizedCode;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets a property type filter using PropertyType enum (for programmatic use).
-    /// </summary>
-    public SparqlQueryBuilder WithPropertyTypeEnum(PropertyType propertyType)
-    {
-        _propertyType = propertyType;
+        // Map to code: accept both codes (D/S/T/F/O) and full names (DETACHED/SEMI-DETACHED/etc.)
+        var code = normalized switch
+        {
+            "D" or "DETACHED" => "D",
+            "S" or "SEMI-DETACHED" => "S",
+            "T" or "TERRACED" => "T",
+            "F" or "FLAT" => "F",
+            "O" or "OTHER" => "O",
+            _ => throw new ArgumentException(
+                "Property type must be one of: D/Detached, S/Semi-Detached, T/Terraced, F/Flat, O/Other.",
+                nameof(propertyType))
+        };
+        
+        _propertyTypeFilter = code;
         return this;
     }
 
@@ -235,13 +234,6 @@ PREFIX lrcommon: <http://landregistry.data.gov.uk/def/common/>
         {
             // Map code to full property type name for SPARQL matching (case-insensitive)
             var propertyTypeName = PropertyTypeCodeToName(_propertyTypeFilter);
-            query.AppendLine($"  FILTER(!BOUND(?propertyType) || LCASE(STR(?propertyType)) = \"{propertyTypeName.ToLower()}\")");
-        }
-        
-        if (_propertyType.HasValue)
-        {
-            var propertyTypeCode = PropertyTypeToSparqlValue(_propertyType.Value);
-            var propertyTypeName = PropertyTypeCodeToName(propertyTypeCode);
             query.AppendLine($"  FILTER(!BOUND(?propertyType) || LCASE(STR(?propertyType)) = \"{propertyTypeName.ToLower()}\")");
         }
     }
