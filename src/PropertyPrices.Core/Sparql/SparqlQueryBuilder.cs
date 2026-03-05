@@ -233,13 +233,16 @@ PREFIX lrcommon: <http://landregistry.data.gov.uk/def/common/>
         
         if (!string.IsNullOrEmpty(_propertyTypeFilter))
         {
-            query.AppendLine($"  FILTER(?propertyType = \"{_propertyTypeFilter}\")");
+            // Map code to full property type name for SPARQL matching (case-insensitive)
+            var propertyTypeName = PropertyTypeCodeToName(_propertyTypeFilter);
+            query.AppendLine($"  FILTER(!BOUND(?propertyType) || LCASE(STR(?propertyType)) = \"{propertyTypeName.ToLower()}\")");
         }
         
         if (_propertyType.HasValue)
         {
             var propertyTypeCode = PropertyTypeToSparqlValue(_propertyType.Value);
-            query.AppendLine($"  FILTER(?propertyType = \"{propertyTypeCode}\")");
+            var propertyTypeName = PropertyTypeCodeToName(propertyTypeCode);
+            query.AppendLine($"  FILTER(!BOUND(?propertyType) || LCASE(STR(?propertyType)) = \"{propertyTypeName.ToLower()}\")");
         }
     }
 
@@ -313,5 +316,15 @@ PREFIX lrcommon: <http://landregistry.data.gov.uk/def/common/>
         PropertyType.Flat => "F",
         PropertyType.Other => "O",
         _ => throw new ArgumentException($"Unknown property type: {propertyType}", nameof(propertyType))
+    };
+
+    private static string PropertyTypeCodeToName(string code) => code.ToUpper() switch
+    {
+        "D" => "Detached",
+        "S" => "Semi-Detached",
+        "T" => "Terraced",
+        "F" => "Flat",
+        "O" => "Other",
+        _ => throw new ArgumentException($"Unknown property type code: {code}", nameof(code))
     };
 }
