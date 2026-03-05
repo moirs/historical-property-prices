@@ -170,6 +170,31 @@ PREFIX lrcommon: <http://landregistry.data.gov.uk/def/common/>
         return query.ToString();
     }
 
+    /// <summary>
+    /// Builds a COUNT query to retrieve the total number of results matching the current filters.
+    /// This query excludes LIMIT/OFFSET to get the complete count across all results.
+    /// </summary>
+    /// <returns>A SPARQL COUNT query string that returns a single result with the count.</returns>
+    public string BuildCountQuery()
+    {
+        var query = new StringBuilder();
+        
+        // Add prefixes
+        query.AppendLine(SparqlPrefixes);
+        
+        // COUNT query - returns total count
+        query.AppendLine("SELECT COUNT(?transx) as ?count");
+        query.AppendLine("WHERE {");
+        
+        // Build WHERE clauses dynamically based on filters (same as Build())
+        BuildWhereClause(query);
+        
+        query.AppendLine("}");
+        
+        // No ORDER BY, LIMIT, or OFFSET for count queries - we want the total
+        return query.ToString();
+    }
+
     private void BuildWhereClause(StringBuilder query)
     {
         // VALUES clause for postcode parameter (using SPARQL 1.1 VALUES syntax)

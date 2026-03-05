@@ -121,6 +121,140 @@ public class SparqlDataAccessClient
     }
 
     /// <summary>
+    /// Executes a SPARQL COUNT query and returns the count result.
+    /// Used for pagination to get the total number of results matching the search criteria.
+    /// </summary>
+    /// <param name="countQuery">The SPARQL COUNT query string to execute.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The total count of results matching the query filters.</returns>
+    /// <exception cref="ArgumentException">Thrown if the query is null or empty.</exception>
+    /// <exception cref="SparqlTimeoutException">Thrown if the query times out.</exception>
+    /// <exception cref="SparqlEndpointException">Thrown if the endpoint returns an error.</exception>
+    /// <exception cref="SparqlQueryException">Thrown if the result cannot be parsed.</exception>
+    public async Task<int> ExecuteCountQueryAsync(
+        string countQuery,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(countQuery))
+            throw new ArgumentException("SPARQL count query cannot be null or empty.", nameof(countQuery));
+
+        _logger.LogInformation("Executing SPARQL COUNT query against endpoint {EndpointUrl}", _options.Url);
+
+        var startTime = DateTime.UtcNow;
+        try
+        {
+            // Create request with SPARQL query as URL-encoded parameter
+            var content = new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("query", countQuery)
+            });
+
+            var request = new HttpRequestMessage(HttpMethod.Post, _options.Url)
+            {
+                Content = content
+            };
+
+            // Set Accept header for JSON SPARQL results
+            request.Headers.Add("Accept", "application/sparql-results+json");
+
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+
+            var elapsed = DateTime.UtcNow - startTime;
+            _logger.LogInformation(
+                "SPARQL COUNT query completed in {ElapsedMs}ms with status {StatusCode}",
+                elapsed.TotalMilliseconds,
+                (int)response.StatusCode);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError(
+                    "SPARQL endpoint returned error status {StatusCode}: {ErrorContent}",
+                    (int)response.StatusCode,
+                    errorContent);
+                throw new SparqlEndpointException(
+                    $"SPARQL endpoint returned error: {(int)response.StatusCode}",
+                    (int)response.StatusCode);
+            }
+
+            var jsonContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogDebug("SPARQL COUNT response: {Response}", jsonContent);
+
+            return ParseSparqlCountResult(jsonContent);
+        }
+        catch (OperationCanceledException ex)
+        {
+            _logger.LogWarning("SPARQL COUNT query was cancelled after {TimeoutSeconds}s", _options.TimeoutSeconds);
+            throw new SparqlTimeoutException(
+                $"SPARQL COUNT query was cancelled after {_options.TimeoutSeconds} seconds.",
+                TimeSpan.FromSeconds(_options.TimeoutSeconds),
+                ex);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "HTTP error executing SPARQL COUNT query");
+            throw new SparqlException("HTTP error executing SPARQL COUNT query.", ex);
+        }
+        catch (SparqlException)
+        {
+            throw; // Re-throw SPARQL exceptions as-is
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error executing SPARQL COUNT query");
+            throw new SparqlException("Unexpected error executing SPARQL COUNT query.", ex);
+        }
+    }
+
+    /// <summary>
+    /// Parses a SPARQL COUNT query result and returns the integer count.
+    /// </summary>
+    private int ParseSparqlCountResult(string jsonContent)
+    {
+        try
+        {
+            var doc = JsonDocument.Parse(jsonContent);
+            var results = doc.RootElement.GetProperty("results");
+            var bindings = results.GetProperty("bindings");
+
+            // COUNT query should return exactly one binding
+            var bindingsArray = bindings.EnumerateArray().ToList();
+            if (bindingsArray.Count == 0)
+            {
+                _logger.LogWarning("SPARQL COUNT query returned no results");
+                return 0;
+            }
+
+            var binding = bindingsArray[0];
+            var countStr = GetBindingValue(binding, "count");
+
+            if (string.IsNullOrEmpty(countStr) || !int.TryParse(countStr, out var count))
+            {
+                _logger.LogWarning("SPARQL COUNT query returned invalid count value: {CountValue}", countStr);
+                return 0;
+            }
+
+            _logger.LogInformation("SPARQL COUNT query returned: {Count}", count);
+            return count;
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "Failed to parse SPARQL COUNT JSON result");
+            throw new SparqlQueryException("Failed to parse SPARQL COUNT JSON result.", null, ex);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogError(ex, "SPARQL COUNT result missing expected structure");
+            throw new SparqlQueryException("SPARQL COUNT result missing expected structure (results.bindings).", null, ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error parsing SPARQL COUNT result");
+            throw new SparqlQueryException("Unexpected error parsing SPARQL COUNT result.", null, ex);
+        }
+    }
+
+    /// <summary>
     /// Parses SPARQL JSON results into a list of PropertySaleRecord objects.
     /// Handles the W3C SPARQL JSON Results Format with HM Land Registry PPD ontology variables.
     /// </summary>

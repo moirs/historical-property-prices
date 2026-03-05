@@ -335,4 +335,110 @@ public class SparqlQueryBuilderTests
         // Assert
         query.Should().Contain("M1 1AA"); // Should be uppercase and space preserved
     }
+
+    [Fact]
+    public void BuildCountQuery_WithNoFilters_ReturnsCountQuery()
+    {
+        // Arrange
+        var builder = new SparqlQueryBuilder();
+
+        // Act
+        var query = builder.BuildCountQuery();
+
+        // Assert
+        query.Should().NotBeNullOrEmpty();
+        query.Should().Contain("SELECT COUNT(?transx) as ?count");
+        query.Should().Contain("WHERE {");
+        query.Should().NotContain("LIMIT");
+        query.Should().NotContain("OFFSET");
+        query.Should().NotContain("ORDER BY");
+    }
+
+    [Fact]
+    public void BuildCountQuery_WithPostcodeFilter_IncludesFilterInCount()
+    {
+        // Arrange
+        var builder = new SparqlQueryBuilder();
+
+        // Act
+        var query = builder
+            .WithPostcode("SW1A 1AA")
+            .BuildCountQuery();
+
+        // Assert
+        query.Should().Contain("SELECT COUNT(?transx) as ?count");
+        query.Should().Contain("VALUES ?postcode {\"SW1A 1AA\"^^xsd:string}");
+        query.Should().NotContain("LIMIT");
+        query.Should().NotContain("OFFSET");
+    }
+
+    [Fact]
+    public void BuildCountQuery_WithDateRange_IncludesFilterInCount()
+    {
+        // Arrange
+        var builder = new SparqlQueryBuilder();
+        var startDate = new DateOnly(2020, 1, 1);
+        var endDate = new DateOnly(2023, 12, 31);
+
+        // Act
+        var query = builder
+            .WithDateRange(startDate, endDate)
+            .BuildCountQuery();
+
+        // Assert
+        query.Should().Contain("SELECT COUNT(?transx) as ?count");
+        query.Should().Contain("FILTER(?date >= \"2020-01-01\"^^xsd:date)");
+        query.Should().Contain("FILTER(?date <= \"2023-12-31\"^^xsd:date)");
+        query.Should().NotContain("LIMIT");
+    }
+
+    [Fact]
+    public void BuildCountQuery_WithPaginationSet_NeverIncludesPagination()
+    {
+        // Arrange
+        var builder = new SparqlQueryBuilder();
+
+        // Act
+        var query = builder
+            .WithPagination(10, 20)  // Set pagination
+            .BuildCountQuery();     // But get COUNT query
+
+        // Assert
+        query.Should().Contain("SELECT COUNT(?transx) as ?count");
+        query.Should().NotContain("LIMIT 10");
+        query.Should().NotContain("OFFSET 20");
+        query.Should().NotContain("ORDER BY");
+    }
+
+    [Fact]
+    public void BuildCountQuery_SameFiltersAsDataQuery()
+    {
+        // Arrange
+        var builder = new SparqlQueryBuilder();
+        var startDate = new DateOnly(2022, 6, 1);
+        var endDate = new DateOnly(2023, 6, 1);
+
+        // Act
+        var countQuery = builder
+            .WithPostcode("E1 1AA")
+            .WithDateRange(startDate, endDate)
+            .WithPropertyType("D")
+            .BuildCountQuery();
+        
+        var dataQuery = builder.Build();
+
+        // Assert - both should have same filters
+        countQuery.Should().Contain("VALUES ?postcode {\"E1 1AA\"^^xsd:string}");
+        dataQuery.Should().Contain("VALUES ?postcode {\"E1 1AA\"^^xsd:string}");
+        
+        countQuery.Should().Contain("FILTER(?date >= \"2022-06-01\"^^xsd:date)");
+        dataQuery.Should().Contain("FILTER(?date >= \"2022-06-01\"^^xsd:date)");
+        
+        countQuery.Should().Contain("detached");  // Property type filter
+        dataQuery.Should().Contain("detached");
+        
+        // But COUNT should not have pagination
+        countQuery.Should().NotContain("LIMIT");
+        dataQuery.Should().NotContain("LIMIT");  // No pagination since we didn't call WithPagination
+    }
 }

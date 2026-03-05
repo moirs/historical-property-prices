@@ -330,6 +330,211 @@ public class SparqlDataAccessClientTests
     }
 
     [Fact]
+    public async Task ExecuteCountQueryAsync_WithValidCountResult_ReturnsIntegerCount()
+    {
+        // Arrange
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        var httpClient = new HttpClient(mockHttpMessageHandler.Object)
+        {
+            BaseAddress = new Uri(_options.Url)
+        };
+
+        var countResult = @"{
+  ""head"": { ""vars"": [""count""] },
+  ""results"": {
+    ""bindings"": [
+      { ""count"": { ""type"": ""literal"", ""value"": ""250"" } }
+    ]
+  }
+}";
+
+        mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = System.Net.HttpStatusCode.OK,
+                Content = new StringContent(countResult)
+            });
+
+        var client = new SparqlDataAccessClient(httpClient, _mockLogger.Object, _options);
+
+        // Act
+        var result = await client.ExecuteCountQueryAsync("SELECT COUNT(?transx) as ?count WHERE { ?transx a ppd:PricePaidRecord . }");
+
+        // Assert
+        result.Should().Be(250);
+    }
+
+    [Fact]
+    public async Task ExecuteCountQueryAsync_WithZeroResults_ReturnsZero()
+    {
+        // Arrange
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        var httpClient = new HttpClient(mockHttpMessageHandler.Object)
+        {
+            BaseAddress = new Uri(_options.Url)
+        };
+
+        var countResult = @"{
+  ""head"": { ""vars"": [""count""] },
+  ""results"": {
+    ""bindings"": [
+      { ""count"": { ""type"": ""literal"", ""value"": ""0"" } }
+    ]
+  }
+}";
+
+        mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = System.Net.HttpStatusCode.OK,
+                Content = new StringContent(countResult)
+            });
+
+        var client = new SparqlDataAccessClient(httpClient, _mockLogger.Object, _options);
+
+        // Act
+        var result = await client.ExecuteCountQueryAsync("SELECT COUNT(?transx) as ?count WHERE { ?transx a ppd:PricePaidRecord . }");
+
+        // Assert
+        result.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ExecuteCountQueryAsync_WithEmptyBindings_ReturnsZero()
+    {
+        // Arrange
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        var httpClient = new HttpClient(mockHttpMessageHandler.Object)
+        {
+            BaseAddress = new Uri(_options.Url)
+        };
+
+        var countResult = @"{
+  ""head"": { ""vars"": [""count""] },
+  ""results"": {
+    ""bindings"": []
+  }
+}";
+
+        mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = System.Net.HttpStatusCode.OK,
+                Content = new StringContent(countResult)
+            });
+
+        var client = new SparqlDataAccessClient(httpClient, _mockLogger.Object, _options);
+
+        // Act
+        var result = await client.ExecuteCountQueryAsync("SELECT COUNT(?transx) as ?count WHERE { ?transx a ppd:PricePaidRecord . }");
+
+        // Assert
+        result.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ExecuteCountQueryAsync_WithInvalidCountValue_ReturnsZero()
+    {
+        // Arrange
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        var httpClient = new HttpClient(mockHttpMessageHandler.Object)
+        {
+            BaseAddress = new Uri(_options.Url)
+        };
+
+        var countResult = @"{
+  ""head"": { ""vars"": [""count""] },
+  ""results"": {
+    ""bindings"": [
+      { ""count"": { ""type"": ""literal"", ""value"": ""not-a-number"" } }
+    ]
+  }
+}";
+
+        mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = System.Net.HttpStatusCode.OK,
+                Content = new StringContent(countResult)
+            });
+
+        var client = new SparqlDataAccessClient(httpClient, _mockLogger.Object, _options);
+
+        // Act
+        var result = await client.ExecuteCountQueryAsync("SELECT COUNT(?transx) as ?count WHERE { ?transx a ppd:PricePaidRecord . }");
+
+        // Assert
+        result.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ExecuteCountQueryAsync_WithNullOrEmptyQuery_ThrowsArgumentException()
+    {
+        // Arrange
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        var httpClient = new HttpClient(mockHttpMessageHandler.Object);
+        var client = new SparqlDataAccessClient(httpClient, _mockLogger.Object, _options);
+
+        // Act & Assert
+        await FluentActions
+            .Invoking(() => client.ExecuteCountQueryAsync(null!))
+            .Should()
+            .ThrowAsync<ArgumentException>()
+            .WithMessage("*SPARQL count query cannot be null or empty*");
+    }
+
+    [Fact]
+    public async Task ExecuteCountQueryAsync_WithEndpointError_ThrowsSparqlEndpointException()
+    {
+        // Arrange
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        var httpClient = new HttpClient(mockHttpMessageHandler.Object)
+        {
+            BaseAddress = new Uri(_options.Url)
+        };
+
+        mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = System.Net.HttpStatusCode.InternalServerError,
+                Content = new StringContent("Internal Server Error")
+            });
+
+        var client = new SparqlDataAccessClient(httpClient, _mockLogger.Object, _options);
+
+        // Act & Assert
+        await FluentActions
+            .Invoking(() => client.ExecuteCountQueryAsync("SELECT COUNT(?transx) as ?count WHERE { ?transx a ppd:PricePaidRecord . }"))
+            .Should()
+            .ThrowAsync<SparqlEndpointException>();
+    }
+
+    [Fact]
     public void SparqlDataAccessClient_WithNullHttpClient_ThrowsArgumentNullException()
     {
         // Act & Assert

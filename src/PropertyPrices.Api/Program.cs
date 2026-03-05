@@ -124,10 +124,21 @@ app.MapPost("/properties/search",
             queryBuilder.WithPagination(request.PageSize, (request.PageNumber - 1) * request.PageSize);
         }
         
-        var sparqlQuery = queryBuilder.Build();
-        log.LogInformation("SPARQL Query to be executed: {Query}", sparqlQuery);
+        // Build both COUNT and DATA queries with same filters
+        var countQuery = queryBuilder.BuildCountQuery();  // Total count (no pagination)
+        var dataQuery = queryBuilder.Build();             // Page data (with pagination)
+        
+        log.LogInformation("SPARQL COUNT Query: {Query}", countQuery);
+        log.LogInformation("SPARQL Data Query: {Query}", dataQuery);
 
-        var rawResults = await dataAccessClient.ExecuteQueryAsync(sparqlQuery);
+        // Execute both queries in parallel for performance
+        var countTask = dataAccessClient.ExecuteCountQueryAsync(countQuery);
+        var dataTask = dataAccessClient.ExecuteQueryAsync(dataQuery);
+        
+        await Task.WhenAll(countTask, dataTask);
+        
+        int totalCount = countTask.Result;
+        var rawResults = dataTask.Result;
 
         // Transform results
         var transformedResults = PropertySaleTransformer.TransformBulk(rawResults);
@@ -148,13 +159,13 @@ app.MapPost("/properties/search",
         var response = new PropertySearchResponse
         {
             Results = paginatedResults,
-            TotalCount = paginatedResults.Count,
+            TotalCount = totalCount,  // Now the actual total count from COUNT query
             PageNumber = request.PageNumber,
             PageSize = request.PageSize
         };
 
-        log.LogInformation("Search completed: found {TotalCount} properties, returning {Count} on page {PageNumber}",
-            paginatedResults.Count, paginatedResults.Count, request.PageNumber);
+        log.LogInformation("Search completed: found {TotalCount} total properties, returning {Count} on page {PageNumber}",
+            totalCount, paginatedResults.Count, request.PageNumber);
 
         return Results.Ok(response);
     }
