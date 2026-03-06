@@ -295,6 +295,7 @@ public class SparqlDataAccessClient
                     Address = fullAddress,
                     Postcode = GetBindingValue(binding, "postcode"),
                     PropertyType = GetBindingValue(binding, "propertyType"),
+                    Duration = GetBindingValue(binding, "duration"),
                     RetrievedAt = DateTime.UtcNow
                 };
 

@@ -23,7 +23,7 @@ public static class PropertySaleTransformer
         var price = ValidatePrice(record.Price);
         var transactionDate = ValidateTransactionDate(record.TransactionDate);
 
-        return new PropertySaleInfo(address, price, transactionDate, record.PropertyType);
+        return new PropertySaleInfo(address, price, transactionDate, record.PropertyType, record.Duration);
     }
 
     /// <summary>

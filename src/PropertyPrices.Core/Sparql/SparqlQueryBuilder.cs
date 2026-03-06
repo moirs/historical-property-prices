@@ -146,7 +146,7 @@ PREFIX lrcommon: <http://landregistry.data.gov.uk/def/common/>
         query.AppendLine(SparqlPrefixes);
         
         // Start SELECT clause - returns: paon, saon, street, town, county, postcode, amount, date, category, propertyType
-        query.AppendLine("SELECT ?paon ?saon ?street ?town ?county ?postcode ?amount ?date ?category ?propertyType");
+        query.AppendLine("SELECT ?paon ?saon ?street ?town ?county ?postcode ?amount ?date ?category ?propertyType ?duration");
         query.AppendLine("WHERE {");
         
         // Build WHERE clauses dynamically based on filters
@@ -216,8 +216,9 @@ PREFIX lrcommon: <http://landregistry.data.gov.uk/def/common/>
         query.AppendLine("          lrppi:transactionDate ?date ;");
         query.AppendLine("          lrppi:transactionCategory/skos:prefLabel ?category .");
         
-        // Optional property type
+        // Optional property type & duration
         query.AppendLine("  OPTIONAL {?transx lrppi:propertyType/skos:prefLabel ?propertyType}");
+        query.AppendLine("  OPTIONAL { ?transx lrppi:estateType/skos:prefLabel ?duration}");
         
         // Optional address components
         query.AppendLine("  OPTIONAL {?addr lrcommon:county ?county}");

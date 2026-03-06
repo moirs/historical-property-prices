@@ -17,6 +17,7 @@ export interface PropertyDto {
   price: number;
   transactionDate: string;
   propertyType: string;
+  duration?: string;
 }
 
 export interface PropertySearchResponse {

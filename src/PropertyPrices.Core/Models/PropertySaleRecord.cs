@@ -24,6 +24,9 @@ public class PropertySaleRecord
     /// <summary>Gets or sets the property type (D/S/T/F/O).</summary>
     public string? PropertyType { get; set; }
 
+    /// <summary>Gets or sets the estate type (Freehold, Leasehold, etc).</summary>
+    public string? Duration { get; set; }
+
     /// <summary>Gets or sets the query execution timestamp.</summary>
     public DateTime RetrievedAt { get; set; } = DateTime.UtcNow;
 }

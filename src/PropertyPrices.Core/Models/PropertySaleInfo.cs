@@ -17,6 +17,9 @@ public class PropertySaleInfo
     /// <summary>Gets or sets the property type (e.g., "Detached", "Semi-Detached", "Terraced", "Flat", "Other").</summary>
     public string? PropertyType { get; set; }
 
+    /// <summary>Gets or sets the estate type (e.g., "Freehold", "Leasehold").</summary>
+    public string? Duration { get; set; }
+
     /// <summary>Gets the date and time when this data was retrieved.</summary>
     public DateTime RetrievedAt { get; set; } = DateTime.UtcNow;
 
@@ -40,12 +43,13 @@ public class PropertySaleInfo
     /// <summary>
     /// Creates a PropertySaleInfo instance with all core properties.
     /// </summary>
-    public PropertySaleInfo(Address address, decimal? price, DateOnly? transactionDate, string? propertyType = null)
+    public PropertySaleInfo(Address address, decimal? price, DateOnly? transactionDate, string? propertyType = null, string? duration = null)
     {
         Address = address ?? new Address();
         Price = price;
         TransactionDate = transactionDate;
         PropertyType = propertyType;
+        Duration = duration;
     }
 
     public override string ToString()

@@ -96,6 +96,9 @@ public class PropertyDto
 
     /// <summary>Gets or sets the property type (e.g., "Detached", "Semi-Detached", "Terraced", "Flat", "Other").</summary>
     public string? PropertyType { get; set; }
+
+    /// <summary>Gets or sets the estate type (e.g., "Freehold", "Leasehold").</summary>
+    public string? Duration { get; set; }
 }
 
 /// <summary>
